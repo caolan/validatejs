@@ -3,7 +3,7 @@ var v = require('./validate');
 
 exports['string field (required)'] = function (test) {
     var schema = {
-        foo: v.string
+        foo: v.string()
     };
     test.same(v.validate(schema, {foo: 'bar'}), []);
     test.same(v.validate(schema, {foo: 123}), [
@@ -17,7 +17,7 @@ exports['string field (required)'] = function (test) {
 
 exports['string field (not required)'] = function (test) {
     var schema = {
-        foo: v.any(v.string, v.undefined)
+        foo: v.any([v.string(), v.undefined()])
     };
     test.same(v.validate(schema, {foo: 'bar'}), []);
     test.same(v.validate(schema, {foo: 123}), [{
@@ -35,7 +35,7 @@ exports['string field (not required)'] = function (test) {
 exports['nested field'] = function (test) {
     var schema = {
         foo: {
-            bar: v.string
+            bar: v.string()
         }
     };
     test.same(v.validate(schema, {foo: {bar: 'asdf'}}), []);
@@ -60,7 +60,7 @@ exports['validate sub-objects'] = function (test) {
         return [];
     };
     var schema = {
-        foo: v.number,
+        foo: v.number(),
         bar: validator
     };
     test.same(v.validate(schema, d), []);
@@ -73,7 +73,7 @@ exports['allow extra properties'] = function (test) {
         bar: 123
     };
     var schema = {
-        foo: v.string
+        foo: v.string()
     };
     test.same(v.validate(schema, d, true), []);
     test.done();
@@ -87,7 +87,7 @@ exports['do not allow extra properties'] = function (test) {
         }
     };
     var schema = {
-        foo: v.string,
+        foo: v.string(),
         bar: {
             qux: function () { return true; }
         }
@@ -99,52 +99,76 @@ exports['do not allow extra properties'] = function (test) {
 };
 
 exports['validator - undefined'] = function (test) {
-    var schema = {foo: v.undefined};
+    var schema = {foo: v.undefined()};
     test.equal(v.validate(schema, {}).length, 0);
     test.equal(v.validate(schema, {foo: null}).length, 1);
     test.equal(v.validate(schema, {foo: 123}).length, 1);
+    test.same(
+        v.validate({foo: v.undefined('asdf')}, {foo: 123}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
 exports['validator - string'] = function (test) {
-    var schema = {foo: v.string};
+    var schema = {foo: v.string()};
     test.equal(v.validate(schema, {foo: 'asdf'}).length, 0);
     test.equal(v.validate(schema, {foo: null}).length, 1);
     test.equal(v.validate(schema, {foo: 123}).length, 1);
+    test.same(
+        v.validate({foo: v.string('asdf')}, {foo: 123}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
 exports['validator - number'] = function (test) {
-    var schema = {foo: v.number};
+    var schema = {foo: v.number()};
     test.equal(v.validate(schema, {foo: 123}).length, 0);
     test.equal(v.validate(schema, {foo: null}).length, 1);
     test.equal(v.validate(schema, {foo: 'asdf'}).length, 1);
+    test.same(
+        v.validate({foo: v.number('asdf')}, {foo: 'bar'}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
 exports['validator - array'] = function (test) {
-    var schema = {foo: v.array};
+    var schema = {foo: v.array()};
     test.equal(v.validate(schema, {foo: [1,2,3]}).length, 0);
     test.equal(v.validate(schema, {foo: {}}).length, 1);
     test.equal(v.validate(schema, {foo: 'asdf'}).length, 1);
+    test.same(
+        v.validate({foo: v.array('asdf')}, {foo: 'bar'}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
 exports['validator - boolean'] = function (test) {
-    var schema = {foo: v.boolean};
+    var schema = {foo: v.boolean()};
     test.equal(v.validate(schema, {foo: true}).length, 0);
     test.equal(v.validate(schema, {foo: false}).length, 0);
     test.equal(v.validate(schema, {foo: {}}).length, 1);
     test.equal(v.validate(schema, {foo: 123}).length, 1);
+    test.same(
+        v.validate({foo: v.boolean('asdf')}, {foo: 'bar'}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
 exports['validator - object'] = function (test) {
-    var schema = {foo: v.object};
+    var schema = {foo: v.object()};
     test.equal(v.validate(schema, {foo: {bar: 'asdf'}}).length, 0);
     test.equal(v.validate(schema, {foo: {}}).length, 0);
     test.equal(v.validate(schema, {foo: [1,2,3]}).length, 1);
     test.equal(v.validate(schema, {foo: 'asdf'}).length, 1);
+    test.same(
+        v.validate({foo: v.object('asdf')}, {foo: 'bar'}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
@@ -154,6 +178,10 @@ exports['validator - min'] = function (test) {
     test.equal(v.validate(schema, {foo: 10}).length, 0);
     test.equal(v.validate(schema, {foo: 0}).length, 1);
     test.equal(v.validate(schema, {foo: 4.99}).length, 1);
+    test.same(
+        v.validate({foo: v.min(5, 'asdf')}, {foo: 2}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
@@ -163,6 +191,10 @@ exports['validator - max'] = function (test) {
     test.equal(v.validate(schema, {foo: 4.99}).length, 0);
     test.equal(v.validate(schema, {foo: 5}).length, 0);
     test.equal(v.validate(schema, {foo: 10}).length, 1);
+    test.same(
+        v.validate({foo: v.max(5, 'asdf')}, {foo: 20}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
@@ -173,6 +205,10 @@ exports['validator - range'] = function (test) {
     test.equal(v.validate(schema, {foo: 2}).length, 0);
     test.equal(v.validate(schema, {foo: 5}).length, 0);
     test.equal(v.validate(schema, {foo: 6}).length, 1);
+    test.same(
+        v.validate({foo: v.range(2, 5, 'asdf')}, {foo: 20}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
@@ -184,6 +220,10 @@ exports['validator - maxLength'] = function (test) {
     test.equal(v.validate(schema, {foo: 'abcdef'}).length, 1);
     test.equal(v.validate(schema, {foo: []}).length, 0);
     test.equal(v.validate(schema, {foo: ''}).length, 0);
+    test.same(
+        v.validate({foo: v.maxLength(5, 'asdf')}, {foo: 'abcdef'}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
@@ -195,6 +235,10 @@ exports['validator - minLength'] = function (test) {
     test.equal(v.validate(schema, {foo: 'abcdef'}).length, 0);
     test.equal(v.validate(schema, {foo: []}).length, 1);
     test.equal(v.validate(schema, {foo: ''}).length, 1);
+    test.same(
+        v.validate({foo: v.minLength(5, 'asdf')}, {foo: 'abc'}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
@@ -209,6 +253,10 @@ exports['validator - rangeLength'] = function (test) {
     test.equal(v.validate(schema, {foo: 'abcdef'}).length, 1);
     test.equal(v.validate(schema, {foo: []}).length, 1);
     test.equal(v.validate(schema, {foo: ''}).length, 1);
+    test.same(
+        v.validate({foo: v.rangeLength(2, 5, 'asdf')}, {foo: ''}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
@@ -216,6 +264,10 @@ exports['validator - regexp'] = function (test) {
     var schema = {foo: v.regexp(/^testing$/)};
     test.equal(v.validate(schema, {foo: 'asdf'}).length, 1);
     test.equal(v.validate(schema, {foo: 'testing'}).length, 0);
+    test.same(
+        v.validate({foo: v.regexp(/^testing$/, 'asdf')}, {foo: ''}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
@@ -223,21 +275,33 @@ exports['validator - regexp with string'] = function (test) {
     var schema = {foo: v.regexp('^testing$')};
     test.equal(v.validate(schema, {foo: 'asdf'}).length, 1);
     test.equal(v.validate(schema, {foo: 'testing'}).length, 0);
+    test.same(
+        v.validate({foo: v.regexp('^testing$', 'asdf')}, {foo: ''}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
 exports['validator - email'] = function (test) {
-    var schema = {foo: v.email};
+    var schema = {foo: v.email()};
     test.equal(v.validate(schema, {foo: 'user@example.com'}).length, 0);
     test.equal(v.validate(schema, {foo: 'asdf'}).length, 1);
+    test.same(
+        v.validate({foo: v.email('asdf')}, {foo: ''}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
 exports['validator - url'] = function (test) {
-    var schema = {foo: v.url};
+    var schema = {foo: v.url()};
     test.equal(v.validate(schema, {foo: 'http://example.com'}).length, 0);
     test.equal(v.validate(schema, {foo: 'https://example.com'}).length, 0);
     test.equal(v.validate(schema, {foo: 'asdf'}).length, 1);
+    test.same(
+        v.validate({foo: v.url('asdf')}, {foo: ''}),
+        [{error: 'asdf', path: ['foo']}]
+    );
     test.done();
 };
 
@@ -246,18 +310,27 @@ exports['all'] = function (test) {
     var vfail1 = function () { return [{error: 'failure1'}]; };
     var vfail2 = function () { return [{error: 'failure2'}]; };
 
-    var s1 = {foo: v.all(vpass, vpass)};
+    var s1 = {foo: v.all([vpass, vpass])};
     test.equal(v.validate(s1, {foo: null}).length, 0);
 
-    var s2 = {foo: v.all(vpass, vfail1)};
+    var s2 = {foo: v.all([vpass, vfail1])};
     test.same(v.validate(s2, {foo: null}), [
         {error: 'failure1', errors: [{error: 'failure1'}], path: ['foo']}
     ]);
 
-    var s3 = {foo: v.all(vfail1, vfail2)};
+    var s3 = {foo: v.all([vfail1, vfail2])};
     test.same(v.validate(s3, {foo: null}), [
         {
             error: 'failure1 AND failure2',
+            errors: [{error: 'failure1'}, {error: 'failure2'}],
+            path: ['foo']
+        }
+    ]);
+
+    var s4 = {foo: v.all([vfail1, vfail2], 'custom message')};
+    test.same(v.validate(s4, {foo: null}), [
+        {
+            error: 'custom message',
             errors: [{error: 'failure1'}, {error: 'failure2'}],
             path: ['foo']
         }
@@ -271,16 +344,25 @@ exports['any'] = function (test) {
     var vfail1 = function () { return [{error: 'failure1'}]; };
     var vfail2 = function () { return [{error: 'failure2'}]; };
 
-    var s1 = {foo: v.any(vpass, vpass)};
+    var s1 = {foo: v.any([vpass, vpass])};
     test.equal(v.validate(s1, {foo: null}).length, 0);
 
-    var s2 = {foo: v.any(vpass, vfail1)};
+    var s2 = {foo: v.any([vpass, vfail1])};
     test.same(v.validate(s2, {foo: null}).length, 0);
 
-    var s3 = {foo: v.any(vfail1, vfail2)};
+    var s3 = {foo: v.any([vfail1, vfail2])};
     test.same(v.validate(s3, {foo: null}), [
         {
             error: 'failure1 OR failure2',
+            errors: [{error: 'failure1'}, {error: 'failure2'}],
+            path: ['foo']
+        }
+    ]);
+
+    var s4 = {foo: v.any([vfail1, vfail2], 'custom message')};
+    test.same(v.validate(s4, {foo: null}), [
+        {
+            error: 'custom message',
             errors: [{error: 'failure1'}, {error: 'failure2'}],
             path: ['foo']
         }
