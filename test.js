@@ -82,13 +82,18 @@ exports['allow extra properties'] = function (test) {
 exports['do not allow extra properties'] = function (test) {
     var d = {
         foo: 'asdf',
-        bar: 123
+        bar: {
+            baz: 123
+        }
     };
     var schema = {
-        foo: v.string
+        foo: v.string,
+        bar: {
+            qux: function () { return true; }
+        }
     };
     test.same(v.validate(schema, d), [
-        {error: 'Unexpected property', path: ['bar']}
+        {error: 'Unexpected property', path: ['bar', 'baz']}
     ]);
     test.done();
 };
