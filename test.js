@@ -44,3 +44,25 @@ exports['nested field'] = function (test) {
     ]);
     test.done();
 };
+
+exports['validate sub-objects'] = function (test) {
+    test.expect(3);
+    var d = {
+        foo: 123,
+        bar: {
+            baz: 'foo',
+            qux: 456
+        }
+    };
+    var validator = function (doc, value) {
+        test.same(doc, d);
+        test.same(value, {baz: 'foo', qux: 456});
+        return [];
+    };
+    var schema = {
+        foo: v.number,
+        bar: validator
+    };
+    test.same(v.validate(schema, d), []);
+    test.done();
+};
