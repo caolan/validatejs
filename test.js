@@ -66,3 +66,29 @@ exports['validate sub-objects'] = function (test) {
     test.same(v.validate(schema, d), []);
     test.done();
 };
+
+exports['allow extra properties'] = function (test) {
+    var d = {
+        foo: 'asdf',
+        bar: 123
+    };
+    var schema = {
+        foo: v.string
+    };
+    test.same(v.validate(schema, d, true), []);
+    test.done();
+};
+
+exports['do not allow extra properties'] = function (test) {
+    var d = {
+        foo: 'asdf',
+        bar: 123
+    };
+    var schema = {
+        foo: v.string
+    };
+    test.same(v.validate(schema, d), [
+        {error: 'Unexpected property', path: ['bar']}
+    ]);
+    test.done();
+};

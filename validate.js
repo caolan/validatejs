@@ -109,16 +109,42 @@ var unshiftPath = function (k) {
     }
 };
 
-exports.validate = function (schema, node, root) {
+var uniqKeys = function (ks) {
+    ks.sort();
+    for (var i = 0; i < ks.length - 1; i++) {
+        if (ks[i] === ks[i + 1]) {
+            ks.splice(i + 1, 1);
+        }
+    }
+    return ks;
+};
+
+var keys = function (obj) {
+    var ks = [];
+    for (var k in obj) {
+        if (obj.hasOwnProperty(k)) {
+            ks.push(k);
+        }
+    }
+    return ks;
+};
+
+var validate = exports.validate = function (schema, node, extra, root) {
     root = root || node;
 
     var errs = [];
-    for (var k in schema) {
-        if (schema.hasOwnProperty(k)) {
-            var v = schema[k],
-                n = node[k];
+    var ukeys = uniqKeys(keys(schema).concat(keys(node)));
 
-            var e = isFunction(v) ? v(root, n): exports.validate(v, n, root);
+    for (var i = 0, len = ukeys.length; i < len; i++) {
+        var k = ukeys[i],
+            v = schema[k],
+            n = node[k];
+
+        if (!extra && !schema.hasOwnProperty(k)) {
+            errs.push({error: 'Unexpected property', path: [k]});
+        }
+        else {
+            var e = isFunction(v) ? v(root, n): validate(v, n, extra, root);
             errs = errs.concat( map(e, unshiftPath(k)) );
         }
     }
